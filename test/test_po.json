@@ -1,0 +1,36 @@
+["order", {
+  "po_number":2,
+  "date":"20090331",
+  "buyer":[
+    {"id-qualifier":"91","id":"3472205","reference":{"API":"3472205 0001"}},
+    {"id":"3472205","reference":{"API":"3472205 0001"}}
+  ],
+  "vendor":[
+    "1556150",
+    {"id-qualifier":"91","reference":{"IA":"1865"},"id":"1556150"}
+  ],
+  "currency":"USD",
+  "items":[{
+    "identifiers":[{"id-qualifier":"SA","id":"03-0010837"}],
+    "price":35.95,
+    "desc":[
+      {"BTI":"Discernment"},
+      {"BPU":"Concord Records,"},
+      {"BPD":"1986."},
+      {"BPH":"1 sound disc :"}
+    ],
+    "quantity":2
+  },{
+    "identifiers":[{"id-qualifier":"SA","id":"03-0010840"}],
+    "price":28.95,
+    "desc":[
+      {"BTI":"The inner source"},
+      {"BAU":"Duke, George, 1946-"},
+      {"BPU":"MPS Records,"},
+      {"BPD":"1973."},
+      {"BPH":"2 sound discs :"}
+    ],
+    "quantity":1
+  }],
+  "line_items":2
+}]
