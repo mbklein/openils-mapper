@@ -1,4 +1,3 @@
-require 'active_support'
 require 'edi/mapper'
 
 module OpenILS
@@ -39,7 +38,17 @@ end
 
 OpenILS::Mapper.map 'item' do |mapper,key,value|
   mapper.add('LIN', { 'C212' => { '7143' => nil }, '1082' => value['line_index'] })
-  id_groups = value['identifiers'].in_groups_of(5)
+
+  # use Array#inject() to group the identifiers in groups of 5.
+  # Same as Array#in_groups_of() without the active_support dependency. 
+  id_groups = value['identifiers'].inject([[]]) { |result,id|
+    result.last << id
+    if result.last.length == 5
+      result << []
+    end
+    result
+  }
+  
   id_groups.each { |group|
     ids = group.compact.collect { |data| 
       id = { '7140' => data['id'] }
