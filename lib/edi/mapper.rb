@@ -1,5 +1,6 @@
 require 'edi4r'
 require 'edi4r/edifact'
+require 'forwardable'
 require 'json'
 
 class String
@@ -14,9 +15,13 @@ end
 module EDI::E
 
   class Mapper
+    extend Forwardable
     
     attr :message
     attr_accessor :defaults
+    def_delegators :@ic, :charset, :groups_created, :inspect, :is_iedi?, 
+      :messages_created, :output_mode=, :show_una, :show_una=, :to_s, 
+      :to_xml, :una, :validate
     
     class << self
       def defaults
@@ -73,14 +78,12 @@ module EDI::E
       handler[:proc].call(self, name, value)
     end
     
-    @segments = []
-    
     def self.from_json(msg_type, json, msg_opts = {}, ic_opts = {})
       result = self.new(msg_type, msg_opts, ic_opts)
       result.add(JSON.parse(json))
-      result
+      result.finalize
     end
-    
+
     def initialize(msg_type, msg_opts = {}, ic_opts = {})
       @ic = EDI::E::Interchange.new(ic_opts || {})
       @message = @ic.new_message( { :msg_type => msg_type, :version => 'D', :release => '96A', :resp_agency => 'UN' }.merge(msg_opts || {}) )
@@ -99,6 +102,13 @@ module EDI::E
           add(arg)
         }
       end
+    end
+    
+    def finalize
+      mode = @ic.output_mode
+      @ic = EDI::E::Interchange.parse(StringIO.new(@ic.to_s))
+      @ic.output_mode = mode
+      return self
     end
     
     def to_s
