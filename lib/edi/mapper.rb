@@ -11,10 +11,8 @@ class String
   
 end
 
-module EDI
+module EDI::E
 
-module E
-  
   class Mapper
     
     attr :message
@@ -147,5 +145,4 @@ module E
     
   end
   
-end
 end
