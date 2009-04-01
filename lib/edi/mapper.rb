@@ -19,9 +19,11 @@ module EDI::E
     
     attr :message
     attr_accessor :defaults
-    def_delegators :@ic, :charset, :groups_created, :inspect, :is_iedi?, 
-      :messages_created, :output_mode=, :show_una, :show_una=, :to_s, 
-      :to_xml, :una, :validate
+    def_delegators :@ic, :charset, :empty?, :groups_created, :header, 
+      :illegal_charset_pattern, :inspect, :is_iedi?, :messages_created, 
+      :output_mode, :output_mode=, :show_una, :show_una=, :syntax, :to_s, 
+      :to_xml, :to_xml_header, :to_xml_trailer, :trailer, :una, :validate, 
+      :version
     
     class << self
       def defaults
