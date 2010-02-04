@@ -1,5 +1,10 @@
 require 'edi4r'
 require 'edi4r/edifact'
+begin
+  require 'edi4r-tdid'
+rescue LoadError
+  warn "WARNING: edi4r-tdid not found. Only EDIFACT versions d96a and d01b will be supported!"
+end
 require 'forwardable'
 require 'json'
 
