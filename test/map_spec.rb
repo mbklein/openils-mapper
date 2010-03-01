@@ -41,6 +41,11 @@ describe EDI::E::Mapper do
     }.should raise_error(TypeError)
   end
   
+  it "should properly fill in interchange envelope defaults" do
+    map = EDI::E::Mapper.new('ORDERS', nil, {:sender => '123456', :recipient => '654321'})
+    map.to_s.should =~ /UNA:\+\.\? 'UNB\+UNOB:3\+123456\+654321\+[0-9]{6}:[0-9]{4}\+1'UNH\+1\+ORDERS:D:96A:UN'UNT\+2\+1'UNZ\+1\+1'/
+  end
+  
   it "should add multiple elements in tuple form" do
     @map.add(
       'BGM', { 'C002' => { '1001' => 220 }, '1004' => '12345678', '1225' => 9 },
