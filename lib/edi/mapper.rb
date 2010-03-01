@@ -94,11 +94,9 @@ module EDI::E
     def initialize(msg_type, msg_opts = {}, ic_opts = {})
       # Bug in edi4r 0.9 -- sometimes :recipient is used; sometimes :recip. It doesn't
       # work. We'll override it.
-      local_ic_opts = ic_opts.reject { |k,v| [:sender,:recipient].include?(k) }
+      local_ic_opts = ic_opts.reject { |k,v| [:sender,:sender_qual,:recipient,:recipient_qual].include?(k) }
       @ic = EDI::E::Interchange.new(local_ic_opts || {})
-      @ic.header.cS002.d0004 = ic_opts[:sender] unless ic_opts[:sender].nil?
-      @ic.header.cS003.d0010 = ic_opts[:recipient] unless ic_opts[:recipient].nil?
-      
+  
       # Apply any envelope defaults.
       ['UNA','UNB','UNZ'].each { |seg|
         seg_defs = self.class.defaults[seg]
@@ -113,6 +111,11 @@ module EDI::E
           }
         end
       }
+
+      @ic.header.cS002.d0004 = ic_opts[:sender] unless ic_opts[:sender].nil?
+      @ic.header.cS002.d0007 = ic_opts[:sender_qual] unless ic_opts[:sender_qual].nil?
+      @ic.header.cS003.d0010 = ic_opts[:recipient] unless ic_opts[:recipient].nil?
+      @ic.header.cS003.d0007 = ic_opts[:recipient_qual] unless ic_opts[:recipient_qual].nil?
       
       @message = @ic.new_message( { :msg_type => msg_type, :version => 'D', :release => '96A', :resp_agency => 'UN' }.merge(msg_opts || {}) )
       @ic.add(@message,false)
