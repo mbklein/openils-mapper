@@ -85,9 +85,29 @@ module EDI::E
       handler[:proc].call(self, name, value)
     end
     
-    def self.from_json(msg_type, json, msg_opts = {}, ic_opts = {})
-      result = self.new(msg_type, msg_opts, ic_opts)
-      result.add(JSON.parse(json))
+    def self.from_json(json, ic_opts = {})
+      struct = JSON.parse(json)
+
+      json_opts = {}
+      [:sender,:recipient].each { |party|
+        party_info = struct[party.to_s]
+        if party_info.is_a?(Hash)
+          json_opts[party] = party_info['id']
+          json_opts["#{party}_qual".to_sym] = party_info['id-qualifier']
+        elsif party_info.is_a?(String)
+          (id,qual) = party_info.split(/:/)
+          json_opts[party] = id
+          json_opts["#{party}_qual".to_sym] = qual
+        end
+      }
+      
+      json_msg_opts = {}
+      if struct['msg_opts'].is_a?(Hash)
+        struct['msg_opts'].each_pair { |k,v| json_msg_opts[k.to_sym] = v }
+      end
+      
+      result = self.new(struct['msg_type'], json_msg_opts, ic_opts.merge(json_opts))
+      result.add(struct['msg'])
       result.finalize
     end
 
