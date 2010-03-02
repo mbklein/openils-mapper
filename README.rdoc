@@ -1,0 +1,60 @@
+= Introduction
+
+This module adds methods to edi4r's EDI::E::Interchange class to map between EDIFACT, Ruby structures, and JSON strings. It takes JSON input and turns it into valid, well-formatted EDIFACT messages. In order to provide the greatest range of flexibility, the mapper can process two types of input interchangeably: low-level (or raw) and high-level.
+
+== Low-Level
+
+Low-level input describes the exact structure of the required EDIFACT segments and data elements, without having to worry about syntax or exact placement. Any segment, simple data element (DE), or composite data element (CDE) can be specified directly. The tradeoff, of course, is that the application sending the JSON message has to be intimately aware of the underlying EDIFACT message's structure, including all segment and DE/CDE order, data types, and code lists. For example, the following EDIFACT segments describe a vendor (SU) identified by its Standard Address Number (code 31B), and with an internal department code (1865, qualified by the code IA):
+
+  NAD+SU+1556150::31B'
+  RFF+IA:1865'
+
+The low-level JSON representation of those two segments looks like this:
+
+  [
+    'NAD', { '3035' : 'SU', 'C082' : { '3039' : '1556150', '3055' : '31B' }},
+    'RFF', { 'C506' : { '1153' : 'IA', '1154' : '1865' }}
+  ]
+
+In this case, the JSON is more verbose than the raw EDIFACT, but at least it insulates the caller from the details of element order, blank DEs, and character escaping.
+
+== High-Level
+
+The mapper's high-level mode defines a number of pseudo-segments that know how to translate themselves into their low-level counterparts. For example, to create a simple supplier segment with an ID and using the defaults for everything else:
+
+  ['vendor', '1556150']
+  => NAD+SU+1556150::91'
+
+But it's easy to override some of the defaults and add extra segment information as well:
+
+  ['vendor', { 'id' : '1556150', 'id-qual' : '31B', 'reference' : { 'IA' : '1865' }}]
+  => NAD+SU+1556150::31B'
+     RFF+IA:1865'
+
+Another example involves the descriptive metadata sent with each line item in a purchase order. Strings longer than 35 characters have to be split across multiple DEs, and strings longer than 70 characters require multiple iterations of the IMD segment:
+
+  IMD+F+BAU+:::Campbell, James'
+  IMD+F+BTI+:::The Ghost Mountain boys ?: their epi:c march and the terrifying battle f'
+  IMD+F+BTI+:::or New Guinea -- the forgotten war :of the South Pacific'
+  IMD+F+BPU+:::Crown Publishers'
+  IMD+F+BPD+:::2007'''
+
+Note the character escaping (?:) and segmentation (:), as well as the repetition of the IMD title (BTI) field to accommodate the long string. The high level version can look like this:
+
+  [
+  'desc', { 'BAU' : 'Campbell, James' },
+  'desc', { 'BTI' : "The Ghost Mountain boys : their epic march and the terrifying battle for New Guinea -- the forgotten war of the South Pacific" },
+  'desc', { 'BPU' : 'Crown Publishers' },
+  'desc', { 'BPD' : 2007 }
+  ]
+
+or even like this:
+
+  ['desc', [
+    'BAU', 'Campbell, James',
+    'BTI', "The Ghost Mountain boys : their epic march and the terrifying battle for New Guinea -- the forgotten war of the South Pacific",
+    'BPU', 'Crown Publishers',
+    'BPD', 2007
+  ]]
+  
+Since the mapper uses regular expressions and closures to define and evaluate the high-level pseudo-segments, the mapper can be extended very easily (in some cases, trivially), and with great flexibility.
