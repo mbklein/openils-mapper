@@ -31,6 +31,9 @@ class Collection
           end
         end
       end
+      if (result[child.name].is_a?(Array) or result[child.name].is_a?(Hash)) and result[child.name].empty?
+        result.delete(child.name)
+      end
     }
     
     # Segment groups last
@@ -57,7 +60,11 @@ class Interchange
     
     messages = []
     self.each { |message|
-      messages << {message.name => message.to_hash}
+      if message.is_a?(MsgGroup)
+        messages += message.to_hash
+      else
+        messages << {message.name => message.to_hash}
+      end
     }
     
     {
@@ -86,6 +93,14 @@ class Message
     }
     segments << [self.trailer.name, self.trailer.to_hash]
     segments
+  end
+  
+end
+
+class MsgGroup
+  
+  def to_hash
+    self.collect { |msg| { msg.name => msg.to_hash } }
   end
   
 end
