@@ -22,14 +22,14 @@ module EDI::E
   class Mapper
     extend Forwardable
     
-    attr :message
+    attr :message, :ic
     attr_accessor :defaults
-    def_delegators :@ic, :charset, :empty?, :groups_created, :header, 
-      :illegal_charset_pattern, :inspect, :is_iedi?, :messages_created, 
-      :output_mode, :output_mode=, :show_una, :show_una=, :syntax, :to_s, 
-      :to_xml, :to_xml_header, :to_xml_trailer, :trailer, :una, :validate, 
-      :version
-    
+#    def_delegators :@ic, :charset, :empty?, :groups_created, :header, 
+#      :illegal_charset_pattern, :inspect, :is_iedi?, :messages_created, 
+#      :output_mode, :output_mode=, :show_una, :show_una=, :syntax, :to_s, 
+#      :to_xml, :to_xml_header, :to_xml_trailer, :trailer, :una, :validate, 
+#      :version
+
     class << self
       def defaults
         @defaults || {}
@@ -106,19 +106,46 @@ module EDI::E
         struct['msg_opts'].each_pair { |k,v| json_msg_opts[k.to_sym] = v }
       end
       
-      result = self.new(struct['msg_type'], json_msg_opts, ic_opts.merge(json_opts))
-      result.add(struct['msg'])
+      result = self.new(ic_opts.merge(json_opts))
+      
+      ['header','trailer'].each { |envseg|
+        if struct[envseg]
+          target = result.send(envseg.to_sym)
+          struct[envseg].last.each_pair { |de,val|
+            if val.is_a?(Hash)
+              val.each_pair { |cde,sval|
+                target[de][0][cde][0].value = sval
+              }
+            else
+              target[de][0].value = val
+            end
+          }
+        end
+      }
+      
+      struct['body'].each { |msg_def|
+        msg_def.each_pair { |msg_type, msg_body|
+          if unh = msg_body.find { |s| s[0] == 'UNH' }
+            version_info = unh[1]['S009']
+            json_msg_opts[:resp_agency] = version_info['0051']
+            json_msg_opts[:version] = version_info['0052']
+            json_msg_opts[:release] = version_info['0054']
+          end
+          result.add_message(msg_type, json_msg_opts)
+          result.add(msg_body)
+        }
+      }
       result.finalize
     end
 
-    def initialize(msg_type, msg_opts = {}, ic_opts = {})
+    def initialize(ic_opts = {})
       # Bug in edi4r 0.9 -- sometimes :recipient is used; sometimes :recip. It doesn't
       # work. We'll override it.
       local_ic_opts = ic_opts.reject { |k,v| [:sender,:sender_qual,:recipient,:recipient_qual].include?(k) }
       @ic = EDI::E::Interchange.new(local_ic_opts || {})
   
       # Apply any envelope defaults.
-      ['UNA','UNB','UNZ'].each { |seg|
+      ['UNB','UNZ'].each { |seg|
         seg_defs = self.class.defaults[seg]
         if seg_defs
           seg_defs.each_pair { |cde,defs|
@@ -136,7 +163,9 @@ module EDI::E
       @ic.header.cS002.d0007 = ic_opts[:sender_qual] unless ic_opts[:sender_qual].nil?
       @ic.header.cS003.d0010 = ic_opts[:recipient] unless ic_opts[:recipient].nil?
       @ic.header.cS003.d0007 = ic_opts[:recipient_qual] unless ic_opts[:recipient_qual].nil?
-      
+    end
+    
+    def add_message(msg_type, msg_opts = {})
       @message = @ic.new_message( { :msg_type => msg_type, :version => 'D', :release => '96A', :resp_agency => 'UN' }.merge(msg_opts || {}) )
       @ic.add(@message,false)
     end
@@ -166,16 +195,26 @@ module EDI::E
       @ic.to_s
     end
     
+    def method_missing(sym, *args)
+      if @ic.respond_to?(sym)
+        @ic.send(sym, *args)
+      else
+        super(sym, *args)
+      end
+    end
+    
     private
     def add_segment(seg_name, value)
       if seg_name =~ /^[A-Z]{3}$/
-        seg = @message.new_segment(seg_name)
-        @message.add(seg)
-        default = self.class.defaults[seg_name]
-        data = default.nil? ? value : default.merge(value)
-        data.each_pair { |de,val|
-          add_element(seg,de,val,default)
-        }
+        if seg_name !~ /^UN[HT]$/
+          seg = @message.new_segment(seg_name)
+          @message.add(seg)
+          default = self.class.defaults[seg_name]
+          data = default.nil? ? value : default.merge(value)
+          data.each_pair { |de,val|
+            add_element(seg,de,val,default)
+          }
+        end
       else
         apply_mapping(seg_name, value)
       end
@@ -184,7 +223,9 @@ module EDI::E
     def add_element(parent, de, value, default)
       default = default[de] unless default.nil?
       
-      if value.is_a?(Hash)
+      if de =~ /^SG[0-9]+$/
+        value.each { |v| self.add(*v) }
+      elsif value.is_a?(Hash)
         new_parent = parent.send("c#{de}")
         data = default.nil? ? value : default.merge(value)
         data.each_pair { |k,v| add_element(new_parent,k,v,default) }
