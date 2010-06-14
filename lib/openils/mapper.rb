@@ -38,8 +38,17 @@ OpenILS::Mapper.map 'order' do |mapper,key,value|
   mapper.add("CNT", { 'C270' => { '6066' => value['line_items'] } })
 end
 
+def map_identifier(data)
+  id = { '7140' => data['id'] }
+  if data['id-qualifier']
+    id['7143'] = data['id-qualifier']
+  end
+  id
+end
+
 OpenILS::Mapper.map 'item' do |mapper,key,value|
-  mapper.add('LIN', { 'C212' => { '7143' => nil }, '1082' => value['line_index'] })
+  primary_id = map_identifier(value['identifiers'].first)
+  mapper.add('LIN', { 'C212' => primary_id, '1082' => value['line_index'] })
 
   # use Array#inject() to group the identifiers in groups of 5.
   # Same as Array#in_groups_of() without the active_support dependency. 
@@ -53,11 +62,7 @@ OpenILS::Mapper.map 'item' do |mapper,key,value|
   
   id_groups.each { |group|
     ids = group.compact.collect { |data| 
-      id = { '7140' => data['id'] }
-      if data['id-qualifier']
-        id['7143'] = data['id-qualifier']
-      end
-      id
+      map_identifier(data)
     }
     mapper.add('PIA',{ 'C212' => ids })
   }
