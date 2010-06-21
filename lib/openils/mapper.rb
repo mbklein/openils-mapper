@@ -58,7 +58,7 @@ OpenILS::Mapper.map 'item' do |mapper,key,value|
       result << []
     end
     result
-  }
+  }.reject { |group| group.empty? }
   
   id_groups.each { |group|
     ids = group.compact.collect { |data| 
