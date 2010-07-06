@@ -4,6 +4,16 @@ module EDI
 
 class Collection
   include Enumerable
+
+  def hash_name
+    # If this is the trigger node for a segment group, use the 
+    # group name. Otherwise, use the segment name.
+    if self.respond_to?(:is_tnode?) and self.is_tnode?
+      self.sg_name
+    else
+      self.name
+    end
+  end
   
   def to_hash
     result = {}
@@ -36,13 +46,13 @@ class Collection
       end
     }
     
-    # Segment groups last
-    if self.respond_to?(:children) and (self.children.empty? == false)
-      segments = []
+    # If this is the trigger node for a segment group, 
+    # make this the first segment in the group.
+    if self.respond_to?(:is_tnode?) and self.is_tnode?
+      result = [[self.name, result]]
       self.children.each { |segment|
-        segments << [segment.name, segment.to_hash]
+        result << [segment.hash_name, segment.to_hash]
       }
-      result[self.sg_name] = segments
     end
     
     result
@@ -89,7 +99,7 @@ class Message
     self.find_all { |segment|
       segment.level < 2
     }.each { |segment| 
-      segments << [segment.name, segment.to_hash] 
+      segments << [segment.hash_name, segment.to_hash] 
     }
     segments << [self.trailer.name, self.trailer.to_hash]
     segments
