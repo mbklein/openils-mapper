@@ -205,7 +205,9 @@ module EDI::E
     
     private
     def add_segment(seg_name, value)
-      if seg_name =~ /^[A-Z]{3}$/
+      if seg_name =~ /^SG[0-9]+$/
+        value.each { |v| self.add(*v) }
+      elsif seg_name =~ /^[A-Z]{3}$/
         if seg_name !~ /^UN[HT]$/
           seg = @message.new_segment(seg_name)
           @message.add(seg)
