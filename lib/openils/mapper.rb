@@ -3,7 +3,7 @@ require 'edi/mapper'
 module OpenILS
   
   class Mapper < EDI::E::Mapper
-    VERSION = '0.9.3'
+    VERSION = '0.9.4'
   end
   
 end
@@ -30,8 +30,8 @@ OpenILS::Mapper.map 'order' do |mapper,key,value|
   value['vendor'].to_a.each { |vendor| mapper.add('vendor',vendor) }
   mapper.add('currency',value['currency'])
   value['items'].each_with_index { |item,index|
-    item['line_index'] = index + 1
-    item['line_number'] = "#{value['po_number']}/#{index+1}" if item['line_number'].nil?
+    item['line_index'] = index + 1 if item['line_index'].nil?
+    item['line_number'] = "#{value['po_number']}/#{item['line_index']}" if item['line_number'].nil?
     mapper.add('item', item)
   }
   mapper.add("UNS", {})
