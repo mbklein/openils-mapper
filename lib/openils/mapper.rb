@@ -3,7 +3,7 @@ require 'edi/mapper'
 module OpenILS
   
   class Mapper < EDI::E::Mapper
-    VERSION = '0.9.4'
+    VERSION = '0.9.5'
   end
   
 end
@@ -68,6 +68,12 @@ OpenILS::Mapper.map 'item' do |mapper,key,value|
   }
   value['desc'].each { |desc| mapper.add('desc',desc) }
   mapper.add('QTY', { 'C186' => { '6060' => value['quantity'] } })
+  if value.has_key?('free-text')
+    chunked_text = value['free-text'].chunk_and_group(512,5)
+    chunked_text.each { |data|
+      mapper.add('FTX', { '4451' => 'LIN', 'C108' => { '4440' => data } })
+    }
+  end
   mapper.add('PRI', { 'C509' => { '5118' => value['price'] } })
   mapper.add('RFF', { 'C506' => { '1153' => 'LI', '1154' => value['line_number'] } })
 end
@@ -106,10 +112,9 @@ OpenILS::Mapper.map 'desc' do |mapper,key,value|
     code = values.shift
     text = values.shift.to_s
     code_qual = code =~ /^[0-9]+$/ ? 'L' : 'F'
-    chunked_text = text.chunk(35)
-    while chunked_text.length > 0
-      data = [chunked_text.shift,chunked_text.shift].compact
+    chunked_text = text.chunk_and_group(35,2)
+    chunked_text.each { |data|
       mapper.add('IMD', { '7077' => code_qual, '7081' => code, 'C273' => { '7008' => data } })
-    end
+    }
   end
 end
