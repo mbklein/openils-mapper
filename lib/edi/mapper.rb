@@ -15,6 +15,18 @@ class String
     self.scan(re).flatten.reject { |chunk| chunk.nil? or chunk.empty? }
   end
   
+  def chunk_and_group(chunk_len, group_len)
+    chunks = self.chunk(chunk_len)
+    groups = [[]]
+    chunks.each { |chunk|
+      if groups.last.length == group_len
+        groups << []
+      end
+      groups.last << chunk
+    }
+    groups
+  end
+  
 end
 
 module EDI::E
