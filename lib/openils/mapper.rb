@@ -3,7 +3,7 @@ require 'edi/mapper'
 module OpenILS
   
   class Mapper < EDI::E::Mapper
-    VERSION = '0.9.5'
+    VERSION = '0.9.7'
   end
   
 end
@@ -69,9 +69,12 @@ OpenILS::Mapper.map 'item' do |mapper,key,value|
   value['desc'].each { |desc| mapper.add('desc',desc) }
   mapper.add('QTY', { 'C186' => { '6060' => value['quantity'] } })
   if value.has_key?('free-text')
-    chunked_text = value['free-text'].chunk_and_group(512,5)
-    chunked_text.each { |data|
-      mapper.add('FTX', { '4451' => 'LIN', 'C108' => { '4440' => data } })
+    freetexts = value['free-text'].is_a?(Enumerable) ? value['free-text'] : [value['free-text']]
+    freetexts.each { |ftx|
+      chunked_text = ftx.chunk_and_group(512,5)
+      chunked_text.each { |data|
+        mapper.add('FTX', { '4451' => 'LIN', '4453' => 1, 'C108' => { '4440' => data } })
+      }
     }
   end
   mapper.add('PRI', { 'C509' => { '5118' => value['price'] } })
