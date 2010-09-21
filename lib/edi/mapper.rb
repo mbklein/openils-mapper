@@ -1,3 +1,4 @@
+require 'forwardable'
 require 'edi4r'
 require 'edi4r/edifact'
 begin
@@ -5,8 +6,12 @@ begin
 rescue LoadError
   warn "WARNING: edi4r-tdid not found. Only EDIFACT versions d96a and d01b will be supported!"
 end
-require 'forwardable'
-require 'json'
+begin
+  require 'json/pure'
+rescue LoadError
+  warn "WARNING: json-pure not found. Trying json."
+  require 'json'
+end
 
 class String
   

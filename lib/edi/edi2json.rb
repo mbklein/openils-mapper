@@ -1,4 +1,9 @@
-require 'json'
+begin
+  require 'json/pure'
+rescue LoadError
+  warn "WARNING: json-pure not found. Trying json."
+  require 'json'
+end
 
 module EDI
 
