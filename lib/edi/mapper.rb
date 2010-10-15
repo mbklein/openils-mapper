@@ -6,12 +6,7 @@ begin
 rescue LoadError
   warn "WARNING: edi4r-tdid not found. Only EDIFACT versions d96a and d01b will be supported!"
 end
-begin
-  require 'json/pure'
-rescue LoadError
-  warn "WARNING: json-pure not found. Trying json."
-  require 'json'
-end
+require 'yajl'
 
 class String
   
@@ -103,7 +98,7 @@ module EDI::E
     end
     
     def self.from_json(json, ic_opts = {})
-      struct = JSON.parse(json)
+      struct = Yajl::Parser.parse(json)
 
       json_opts = {}
       [:sender,:recipient].each { |party|

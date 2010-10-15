@@ -1,9 +1,4 @@
-begin
-  require 'json/pure'
-rescue LoadError
-  warn "WARNING: json-pure not found. Trying json."
-  require 'json'
-end
+require 'yajl'
 
 module EDI
 
@@ -64,7 +59,7 @@ class Collection
   end
   
   def to_json(*a)
-    self.to_hash.to_json(*a)
+    Yajl::Encoder.encode(self.to_hash, *a)
   end
   
 end

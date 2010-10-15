@@ -3,6 +3,7 @@ begin
   $: << File.join(File.dirname(__FILE__),'lib')
   require 'openils/mapper'
   Gem::Specification.new do |s|
+    s.homepage = 'http://github.com/mbklein/openils-mapper'
     s.name = "openils-mapper"
     s.version = OpenILS::Mapper::VERSION
     s.summary = "EDIFACT<->JSON middleware for the Evergreen Open Source ILS"
@@ -14,7 +15,7 @@ begin
     s.rdoc_options << '--main' << 'README.rdoc'
     s.add_dependency 'edi4r', '>= 0.9.4'
     s.add_dependency 'edi4r-tdid', '>= 0.6.5'
-    s.add_dependency 'json', '>= 1.1.3'
+    s.add_dependency 'yajl-ruby', '>= 0.7.7'
     s.add_development_dependency 'rcov', '>= 0.8.1'
     s.add_development_dependency 'rspec', '>= 1.2.2'
     s.add_development_dependency 'rake', '>= 0.8.0'

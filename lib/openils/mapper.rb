@@ -3,7 +3,7 @@ require 'edi/mapper'
 module OpenILS
   
   class Mapper < EDI::E::Mapper
-    VERSION = '0.9.8'
+    VERSION = '0.9.9'
   end
   
 end
